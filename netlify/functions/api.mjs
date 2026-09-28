@@ -13,9 +13,9 @@ export default async (req) => {
 
   if (path === "/api/state") {
     if (req.method === "GET") {
-      const s = (await store.get("state", { type: "json" })) || { stage: 0, epoch: 0, enRouteAt: null };
+      const s = (await store.get("state", { type: "json" })) || { stage: 0, epoch: 0, enRouteAt: null, resetAt: 0 };
       return json(
-        { stage: s.stage, epoch: s.epoch, elapsed: s.enRouteAt ? Date.now() - s.enRouteAt : 0 },
+        { stage: s.stage, epoch: s.epoch, resetAt: s.resetAt || 0, elapsed: s.enRouteAt ? Date.now() - s.enRouteAt : 0 },
         200,
         { "cache-control": "public, max-age=0, must-revalidate", "netlify-cdn-cache-control": "public, s-maxage=2, stale-while-revalidate=2" }
       );
@@ -29,8 +29,9 @@ export default async (req) => {
       let enRouteAt = null;
       if (stage === 2) enRouteAt = prev.stage === 2 && prev.epoch === epoch && prev.enRouteAt ? prev.enRouteAt : Date.now();
       if (stage >= 3) enRouteAt = prev.enRouteAt || Date.now();
-      await store.setJSON("state", { stage, epoch, enRouteAt });
-      return json({ stage, epoch, elapsed: enRouteAt ? Date.now() - enRouteAt : 0 });
+      const resetAt = b.home ? Date.now() : prev.resetAt || 0;
+      await store.setJSON("state", { stage, epoch, enRouteAt, resetAt });
+      return json({ stage, epoch, resetAt, elapsed: enRouteAt ? Date.now() - enRouteAt : 0 });
     }
   }
 
