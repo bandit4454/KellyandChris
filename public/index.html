@@ -714,6 +714,7 @@ function show(id){["home","track","review","thanks","presenter"].forEach(s=>$(s)
 function route(){
   if(isPresenter()){show("presenter");presenterOpen();return}
   if(live.stage>=5){if(order&&phase!=="done"){phase="done";store.set("tt_phase",phase);report()}hideDelivered();show("thanks");renderThanks();return}
+  if(!order&&live.stage>=1&&live.stage<=4&&$("sheet").hidden)startSpectator();
   if(order&&phase==="track"&&live.stage>=4){phase="review";store.set("tt_phase",phase)}
   if(order&&phase==="track"){show("track");renderTrack(true);return}
   hideDelivered();
@@ -731,7 +732,7 @@ $("sheet").addEventListener("click",e=>{if(e.target.id==="sheet")closeSheet()});
 $("sheetBack").onclick=()=>{step=step==="checkout"?"cart":"menu";renderSheet()};
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("sheet").hidden)closeSheet()});
 function openSheet(){step="menu";$("sheet").hidden=false;document.body.style.overflow="hidden";renderSheet()}
-function closeSheet(){$("sheet").hidden=true;document.body.style.overflow=""}
+function closeSheet(){$("sheet").hidden=true;document.body.style.overflow="";if(!order&&!isPresenter()&&live.stage>=1&&live.stage<=4)setTimeout(route,0)}
 const count=()=>Object.values(cart).reduce((a,b)=>a+b,0);
 const total=()=>MENU.reduce((a,m)=>a+(cart[m.id]||0)*m.price,0);
 function stepper(id){return `<div class="stepper"><button data-dec="${id}" aria-label="Remove one">−</button><span>${cart[id]}</span><button data-inc="${id}" aria-label="Add one">+</button></div>`}
@@ -876,6 +877,12 @@ $("revSubmit").onclick=()=>{
   store.set("tt_review",{stars:review.stars,tags:review.tags,text:$("revText").value.trim().slice(0,200),at:Date.now()});
   phase="done";store.set("tt_phase",phase);report();route();
 };
+function startSpectator(){
+  // guest never ordered: give them a watch-along order so they follow the live tracker
+  const items={hosp:1,five:1,ice:1};
+  order={spectator:true,reset:live.resetAt||0,num:"TT-"+String(Math.floor(1000+Math.random()*9000)),name:"friend",items,total:MENU.reduce((a,m)=>a+(items[m.id]||0)*m.price,0),at:Date.now()};
+  phase="track";store.set("tt_order",order);store.set("tt_phase",phase);report();
+}
 function clearGuest(){store.del("tt_order");store.del("tt_phase");store.del("tt_review");order=null;phase=null;cart={};review={stars:0,tags:[]};$("revText").value="";hideDelivered();stopAnim();closeSheet();report();route()}
 $("newOrder").onclick=e=>{e.preventDefault();clearGuest()};
 
@@ -889,6 +896,7 @@ function applyLive(next){
   const first=live.epoch===-1;
   live={stage:next.stage,epoch:next.epoch,elapsed:next.elapsed||0,resetAt:live.resetAt};
   if(!isPresenter()&&(live.stage>=5||prev>=5)){hideDelivered();stopAnim();route();return}
+  if(!isPresenter()&&!order&&live.stage>=1&&live.stage<=4&&$("sheet").hidden){route();return}
   if(!$("track").hidden){
     if(live.stage>=4){goReview();return}
     if(live.stage<3)hideDelivered();
@@ -902,7 +910,7 @@ function applyLive(next){
 /* ---------- guest -> presenter reporting ---------- */
 function guestRecord(){
   const r=store.get("tt_review",null);
-  return {id:gid,n:order?order.name.slice(0,30):"",o:order?1:0,q:order?Object.values(order.items).reduce((a,b)=>a+b,0):0,r:r?r.stars:0,t:r?r.tags:[],c:r&&r.text?r.text:"",ra:r?r.at:0};
+  return {id:gid,n:order&&!order.spectator?order.name.slice(0,30):"",o:order&&!order.spectator?1:0,q:order?Object.values(order.items).reduce((a,b)=>a+b,0):0,r:r?r.stars:0,t:r?r.tags:[],c:r&&r.text?r.text:"",ra:r?r.at:0};
 }
 function report(){
   if(isPresenter())return;
