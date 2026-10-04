@@ -23,7 +23,7 @@ export default async (req) => {
     if (req.method === "POST") {
       const b = await req.json().catch(() => ({}));
       if (b.pin !== PIN()) return json({ error: "bad_pin" }, 401);
-      const stage = Math.max(0, Math.min(4, b.stage | 0));
+      const stage = Math.max(0, Math.min(5, b.stage | 0));
       const prev = (await store.get("state", { type: "json" })) || {};
       const epoch = b.reset || !prev.epoch ? Date.now() : prev.epoch;
       let enRouteAt = null;
