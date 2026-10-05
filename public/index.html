@@ -121,6 +121,10 @@ footer b{color:#fff}
 .item.on{border-color:var(--red)}
 .item .txt{flex:1;min-width:0}
 .item h4{margin:0;font-size:17px;font-weight:700}
+.diet{display:inline-flex;align-items:center;gap:5px;margin-left:10px;font-size:12px;font-weight:700;vertical-align:1px}
+.diet b{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 4px;border-radius:999px;font-size:10px;color:#fff;letter-spacing:.02em}
+.diet-v{color:#2f8a57}.diet-v b{background:#2f8a57}
+.diet-gf{color:#9a6a12}.diet-gf b{background:#c4973f}
 .item .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--red);background:#f8e3e1;border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:2px}
 .item p{color:var(--muted);font-size:14px;line-height:1.4;margin-top:2px}
 .item .price{font-weight:700;font-size:14px;margin-top:4px;font-variant-numeric:tabular-nums}
@@ -672,8 +676,8 @@ const DINE={
 };
 const MENU=[
  {cat:"Mains",id:"hosp",name:"Superb Hospitality",desc:"A generous tray of warm welcomes, remembered names and refilled glasses.",price:18.12,tag:"Chef's pick"},
- {cat:"Mains",id:"five",name:"5-Star Service",desc:"Our signature. Arrives early, set up perfectly, gone without a trace.",price:24.12,tag:"Most ordered"},
- {cat:"Mains",id:"tips",name:"Useful Tips & Tricks",desc:"Bite-size know-how, served family style. Pairs well with coffee.",price:9.12},
+ {cat:"Mains",id:"five",name:"5-Star Service",desc:"Our signature. Arrives early, set up perfectly, gone without a trace.",price:24.12,tag:"Most ordered",diet:["gf"]},
+ {cat:"Mains",id:"tips",name:"Useful Tips & Tricks",desc:"Bite-size know-how, served family style. Pairs well with coffee.",price:9.12,diet:["v"]},
  {cat:"Mains",id:"ontime",name:"On-Time Everything",desc:"Delivered in the window we promised. Every single time.",price:14.12},
  {cat:"Sides",id:"ice",name:"Iceberg-Free Communication",desc:"Clear updates before you have to ask. No surprises below the waterline.",price:12.12},
  {cat:"Sides",id:"patience",name:"Extra Patience (Large)",desc:"For long meetings and last-minute headcount changes.",price:7.12},
@@ -735,6 +739,8 @@ function openSheet(){step="menu";$("sheet").hidden=false;document.body.style.ove
 function closeSheet(){$("sheet").hidden=true;document.body.style.overflow="";if(!order&&!isPresenter()&&live.stage>=1&&live.stage<=4)setTimeout(route,0)}
 const count=()=>Object.values(cart).reduce((a,b)=>a+b,0);
 const total=()=>MENU.reduce((a,m)=>a+(cart[m.id]||0)*m.price,0);
+const DIET={v:{t:"V",l:"Vegan",c:"diet-v"},gf:{t:"GF",l:"Gluten free",c:"diet-gf"}};
+function dietBadges(m){return (m.diet||[]).map(k=>`<span class="diet ${DIET[k].c}" title="${DIET[k].l}"><b aria-hidden="true">${DIET[k].t}</b>${DIET[k].l}</span>`).join("")}
 function stepper(id){return `<div class="stepper"><button data-dec="${id}" aria-label="Remove one">−</button><span>${cart[id]}</span><button data-inc="${id}" aria-label="Add one">+</button></div>`}
 function renderSheet(){
   const body=$("sheetBody"),foot=$("sheetFoot");
@@ -745,7 +751,7 @@ function renderSheet(){
     MENU.forEach(m=>{
       if(m.cat!==last){h+=`<div class="cat">${m.cat}</div>`;last=m.cat}
       const q=cart[m.id]||0;
-      h+=`<div class="item${q?" on":""}"><div class="txt"><h4>${m.name}${m.tag?`<span class="tag">${m.tag}</span>`:""}</h4><p>${m.desc}</p><div class="price">${money(m.price)}</div></div>${q?stepper(m.id):`<button class="add" data-inc="${m.id}" aria-label="Add ${m.name}">+</button>`}</div>`;
+      h+=`<div class="item${q?" on":""}"><div class="txt"><h4>${m.name}${m.tag?`<span class="tag">${m.tag}</span>`:""}</h4><p>${m.desc}</p><div class="price">${money(m.price)}${dietBadges(m)}</div></div>${q?stepper(m.id):`<button class="add" data-inc="${m.id}" aria-label="Add ${m.name}">+</button>`}</div>`;
     });
     body.innerHTML=h;
     const n=count();
